@@ -12,9 +12,8 @@
     <meta name="theme-color" content="#050505">
     
     <!-- HOME SCREEN ICONS -->
-    <link rel="apple-touch-icon" href="https://drive.google.com/thumbnail?id=19CwRCKQZsmXTUI0DBZtAN4AaUy1zuxdk&sz=w500">
-    <link rel="apple-touch-icon" sizes="180x180" href="https://drive.google.com/thumbnail?id=19CwRCKQZsmXTUI0DBZtAN4AaUy1zuxdk&sz=w180">
-    <link rel="icon" type="image/png" href="https://drive.google.com/thumbnail?id=19CwRCKQZsmXTUI0DBZtAN4AaUy1zuxdk&sz=w192">
+    <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/19CwRCKQZsmXTUI0DBZtAN4AaUy1zuxdk">
+    <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/d/19CwRCKQZsmXTUI0DBZtAN4AaUy1zuxdk">
 
     <title>Fares King | Supermarket</title>
     
@@ -148,7 +147,7 @@
     <div id="webapp-prompt" class="fixed inset-0 flex flex-col items-center justify-center p-10 text-center">
         <div class="relative mb-8">
             <div class="absolute inset-0 bg-purple-600 blur-[80px] opacity-20"></div>
-            <img id="prompt-logo" src="" class="w-32 h-32 rounded-full object-cover border-4 border-purple-600 relative z-10 shadow-2xl">
+            <img id="prompt-logo" src="" class="w-32 h-32 rounded-full object-cover border-4 border-purple-600 relative z-10 shadow-2xl" crossorigin="anonymous">
         </div>
         <h2 class="text-4xl font-black italic uppercase tracking-tighter mb-4">INSTALL WEB APP</h2>
         <p class="text-white/40 text-sm mb-8 leading-relaxed">Add to home screen to use the supermarket.</p>
@@ -161,18 +160,17 @@
     <div id="loader" class="fixed inset-0 bg-[#050505] flex flex-col items-center justify-center z-[300] transition-opacity duration-1000">
         <div class="relative mb-8">
             <div class="absolute inset-0 bg-purple-600 blur-[80px] opacity-30 animate-pulse"></div>
-            <img id="load-logo" src="" class="w-28 h-28 rounded-full object-cover border-2 border-purple-600 relative z-10 shadow-2xl">
+            <img id="load-logo" src="" class="w-28 h-28 rounded-full object-cover border-2 border-purple-600 relative z-10 shadow-2xl" crossorigin="anonymous">
         </div>
         <p class="text-purple-500 font-black tracking-[0.6em] text-[10px] uppercase italic animate-pulse">Entering Empire…</p>
     </div>
 
     <div id="toast">Added to bag</div>
 
-    <!-- MAIN SHOP UI -->
     <div id="main-content">
         <nav class="fixed top-0 w-full z-50 bg-black/60 backdrop-blur-2xl border-b border-white/5 px-6 pb-4 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <img id="nav-logo" src="" class="w-10 h-10 rounded-full object-cover border border-purple-600/30" alt="Fares King">
+                <img id="nav-logo" src="" class="w-10 h-10 rounded-full object-cover border border-purple-600/30" alt="Fares King" crossorigin="anonymous">
                 <div>
                     <p class="text-[9px] text-purple-500 font-black uppercase tracking-widest mb-1">Supermarket</p>
                     <h1 class="font-black italic text-lg uppercase tracking-tighter leading-none">Fares King</h1>
@@ -199,26 +197,8 @@
         </main>
     </div>
 
-    <!-- NON-EDITABLE ORDER RECEIPT VIEW -->
-    <div id="receipt-view" class="hidden min-h-screen pt-32 px-6 pb-20">
-        <div class="max-w-md mx-auto bg-white/5 border border-white/10 rounded-[3rem] p-10 relative overflow-hidden">
-             <div class="absolute top-0 right-0 p-5 bg-purple-600 text-[10px] font-black uppercase italic tracking-widest">Verified Order</div>
-             <p class="text-purple-500 font-black text-[10px] uppercase tracking-[0.3em] mb-4">Official Receipt</p>
-             <h2 class="text-4xl font-black italic uppercase tracking-tighter mb-10">ORDER <span id="view-order-id" class="text-white/20">#XXXX</span></h2>
-             
-             <div class="space-y-6 mb-12">
-                 <div><p class="text-[9px] font-black uppercase text-white/30 tracking-widest mb-1">Customer</p><p id="view-name" class="text-2xl font-bold">---</p></div>
-                 <div><p class="text-[9px] font-black uppercase text-white/30 tracking-widest mb-1">Grade</p><p id="view-grade" class="text-2xl font-bold">---</p></div>
-                 <div><p class="text-[9px] font-black uppercase text-white/30 tracking-widest mb-1">Delivery</p><p id="view-date" class="text-2xl font-bold">---</p></div>
-             </div>
-
-             <div id="view-items" class="border-t border-white/10 pt-8 space-y-4 mb-10"></div>
-
-             <div class="flex justify-between items-end border-t border-white/10 pt-8">
-                 <span class="text-xl font-black italic uppercase">Total</span>
-                 <span id="view-total" class="text-4xl font-black text-purple-500 tracking-tighter">0 AED</span>
-             </div>
-        </div>
+    <div id="receipt-view" class="hidden min-h-screen pt-32 px-6 pb-20 bg-[#050505]">
+        <div id="receipt-card-container"></div>
         <button onclick="window.location.href=window.location.origin+window.location.pathname" class="w-full mt-10 text-[10px] font-black uppercase text-white/20 tracking-[0.5em] italic">Close Receipt</button>
     </div>
 
@@ -237,7 +217,7 @@
                     <input type="text" id="cust-grade" placeholder="Grade / Section (e.g. 12-A)" class="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 outline-none focus:border-purple-600 font-bold text-white">
                     <input type="text" id="cust-date" placeholder="Delivery Day" class="w-full bg-white/5 border border-white/10 rounded-2xl py-5 px-6 outline-none focus:border-purple-600 font-bold text-white">
                 </div>
-                <p class="text-[10px] text-white/30 text-center uppercase tracking-widest font-black">Order link will be generated.<br>Paste it in the group chat!</p>
+                <p class="text-[10px] text-white/30 text-center uppercase tracking-widest font-black">Order will be copied to clipboard.<br>Paste it in the group chat!</p>
             </div>
         </div>
 
@@ -249,28 +229,27 @@
             <div class="space-y-4">
                 <button id="step-btn" onclick="nextStep()" class="w-full py-6 bg-white text-black font-black uppercase italic tracking-widest rounded-[2rem] tap-active disabled:opacity-10">Checkout</button>
                 <button id="final-btn" onclick="sendOrder()" class="hidden w-full py-6 bg-purple-600 text-white font-black uppercase italic tracking-widest rounded-[2rem] flex items-center justify-center gap-3 shadow-xl shadow-purple-600/40 tap-active">
-                    Generate & Send <i class="fab fa-whatsapp text-lg"></i>
+                    Copy & Open Chat <i class="fab fa-whatsapp text-lg"></i>
                 </button>
                 <button id="back-btn" onclick="prevStep()" class="hidden w-full py-2 text-[10px] font-black uppercase text-white/30 tracking-[0.3em]">Back to bag</button>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // CONFIG
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'fares-king-app';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'fares-king-supermarket';
 
-        // SHOP DATA
-        const getDriveImg = (id) => `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+        // More robust Google Drive proxy
+        const getDriveImg = (id) => `https://lh3.googleusercontent.com/d/${id}`;
+        
         const LOGO_ID = "1jBkacG_Wj8_o7OcVYp6U1rjVb5iLts6I";
         const WEBAPP_ICON_ID = "19CwRCKQZsmXTUI0DBZtAN4AaUy1zuxdk";
         const GROUP_LINK = "https://chat.whatsapp.com/H0lRM4emjMO4sVlsjyGGlq";
@@ -286,12 +265,24 @@
         let cart = [];
         let currentTab = 'all';
 
-        // DATABASE HELPERS
+        function robustCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try { document.execCommand('copy'); } catch (err) {}
+            document.body.removeChild(textArea);
+        }
+
         window.sendOrder = async () => {
             const name = document.getElementById('cust-name').value;
             const grade = document.getElementById('cust-grade').value;
             const date = document.getElementById('cust-date').value;
-            if (!name || !grade) return showToast("Enter Name & Grade!");
+            if (!name || !grade) return showToast("Name & Grade Required!");
 
             const orderId = Math.random().toString(36).substring(2, 8).toUpperCase();
             const orderData = {
@@ -299,73 +290,44 @@
                 items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price })),
                 total: cart.reduce((s, i) => s + (i.price * i.qty), 0),
                 createdAt: Date.now(),
-                expiresAt: Date.now() + (15 * 60 * 60 * 1000) // 15 Hours
+                expiresAt: Date.now() + (15 * 60 * 60 * 1000)
             };
 
             try {
-                // Save to Firestore
                 const orderRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', orderId);
                 await setDoc(orderRef, orderData);
-
-                // Generate Tracking Link
-                const trackingLink = `${window.location.origin}${window.location.pathname}?orderId=${orderId}`;
-                
-                // Copy to clipboard
-                const textArea = document.createElement("textarea");
-                textArea.value = `👑 *NEW ORDER: ${orderId}*\n\nView Receipt:\n${trackingLink}`;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-
-                showToast("Order Logged! Paste in Chat.");
-                setTimeout(() => {
-                    window.open(GROUP_LINK, '_top');
-                }, 1500);
-            } catch (e) {
-                console.error(e);
-                showToast("Order Failed. Try again.");
-            }
+                const link = `${window.location.origin}${window.location.pathname}?orderId=${orderId}`;
+                const msg = `👑 *FARES KING ORDER: ${orderId}*\n👤 *NAME:* ${name}\n📍 *GRADE:* ${grade}\n\n📦 *RECEIPT:*\n${link}`;
+                robustCopy(msg);
+                showToast("Order Copied!");
+                setTimeout(() => window.open(GROUP_LINK, '_top'), 1000);
+            } catch (e) { showToast("Error connecting..."); }
         };
 
-        async function checkOrderId() {
+        async function checkReceipt() {
             const params = new URLSearchParams(window.location.search);
             const oid = params.get('orderId');
             if (!oid) return false;
-
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', oid);
-            const snap = await getDoc(docRef);
-
-            if (snap.exists()) {
-                const data = snap.data();
-                if (Date.now() > data.expiresAt) {
-                    showToast("Order Link Expired");
-                    return false;
-                }
-                renderReceipt(data);
-                return true;
-            }
-            return false;
-        }
-
-        function renderReceipt(data) {
             document.getElementById('main-content').classList.add('hidden');
             document.getElementById('receipt-view').classList.remove('hidden');
-            document.getElementById('view-order-id').innerText = `#${data.orderId}`;
-            document.getElementById('view-name').innerText = data.name;
-            document.getElementById('view-grade').innerText = data.grade;
-            document.getElementById('view-date').innerText = data.date || "ASAP";
-            document.getElementById('view-total').innerText = `${data.total} AED`;
-            
-            document.getElementById('view-items').innerHTML = data.items.map(i => `
-                <div class="flex justify-between font-bold uppercase text-xs">
-                    <span>${i.qty}x ${i.name}</span>
-                    <span>${i.qty * i.price} AED</span>
-                </div>
-            `).join('');
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', oid);
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                const d = snap.data();
+                document.getElementById('receipt-card-container').innerHTML = `
+                    <div class="bg-white/5 border border-white/10 rounded-[3rem] p-10">
+                        <h2 class="text-4xl font-black italic uppercase tracking-tighter mb-10">ORDER <span class="text-white/20">#${d.orderId}</span></h2>
+                        <div class="space-y-6 mb-12">
+                            <div><p class="text-[9px] font-black uppercase text-white/30 mb-1">Customer</p><p class="text-2xl font-bold">${d.name}</p></div>
+                            <div><p class="text-[9px] font-black uppercase text-white/30 mb-1">Grade</p><p class="text-2xl font-bold">${d.grade}</p></div>
+                        </div>
+                        <div class="border-t border-white/10 pt-8 space-y-4 mb-10">${d.items.map(i => `<div class="flex justify-between font-bold uppercase text-xs"><span>${i.qty}x ${i.name}</span><span>${i.qty * i.price} AED</span></div>`).join('')}</div>
+                        <div class="flex justify-between items-end border-t border-white/10 pt-8"><span class="text-xl font-black italic uppercase">Total</span><span class="text-4xl font-black text-purple-500 tracking-tighter">${d.total} AED</span></div>
+                    </div>`;
+            }
+            return true;
         }
 
-        // ORIGINAL LOGIC (RESTORED)
         window.setTab = (tab) => {
             currentTab = tab;
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -373,12 +335,12 @@
             renderGrid();
         };
 
-        function renderGrid() {
+        window.renderGrid = () => {
             const filtered = snacks.filter(s => currentTab === 'all' || s.category === currentTab);
             document.getElementById('snack-grid').innerHTML = filtered.map(s => `
                 <div id="snack-${s.id}" onclick="handleCardClick(${s.id})" class="snack-card w-full bg-[#0c0c0c] border border-white/5 rounded-[3rem] overflow-hidden flex flex-col">
                     <div class="image-container">
-                        <img src="${s.img}" class="snack-shadow ${s.isBoba ? 'boba-adjust' : ''} ${s.isTiger ? 'tiger-milk-pos' : ''}">
+                        <img src="${s.img}" class="snack-shadow ${s.isBoba ? 'boba-adjust' : ''} ${s.isTiger ? 'tiger-milk-pos' : ''}" crossorigin="anonymous">
                         <div class="absolute top-8 left-8 bg-black/40 backdrop-blur-xl border border-white/10 px-5 py-2 rounded-2xl font-black italic text-xs tracking-tighter z-10">${s.price} AED</div>
                     </div>
                     <div class="p-8 flex-grow">
@@ -388,7 +350,7 @@
                     </div>
                 </div>
             `).join('');
-        }
+        };
 
         window.handleCardClick = (id) => {
             document.querySelectorAll('.snack-card').forEach(el => el.classList.remove('selected'));
@@ -398,8 +360,7 @@
         window.addToCart = (id) => {
             const item = snacks.find(s => s.id === id);
             const exists = cart.find(c => c.id === id);
-            if (exists) exists.qty++;
-            else cart.push({...item, qty: 1});
+            if (exists) exists.qty++; else cart.push({...item, qty: 1});
             updateUI();
             showToast("Added to bag");
         };
@@ -420,7 +381,7 @@
                 cart.map(c => {
                     total += (c.price * c.qty);
                     count += c.qty;
-                    return `<div class="flex gap-4 items-center bg-white/[0.03] p-5 rounded-[2rem] border border-white/5"><div class="w-16 h-16 bg-neutral-900 rounded-2xl p-2"><img src="${c.img}" class="max-w-full max-h-full object-contain"></div><div class="flex-grow"><h4 class="font-black italic uppercase text-[10px] mb-0.5">${c.name}</h4><p class="text-purple-500 font-black text-xs">${c.price * c.qty} AED</p></div><div class="flex items-center gap-3"><button onclick="changeQty(${c.id},-1)" class="w-8 h-8 bg-white/5 rounded-xl flex items-center justify-center"><i class="fas fa-minus text-[8px]"></i></button><span class="text-xs font-black w-4 text-center">${c.qty}</span><button onclick="changeQty(${c.id},1)" class="w-8 h-8 bg-white/5 rounded-xl flex items-center justify-center"><i class="fas fa-plus text-[8px]"></i></button></div></div>`;
+                    return `<div class="flex gap-4 items-center bg-white/[0.03] p-5 rounded-[2rem] border border-white/5"><div class="w-16 h-16 bg-neutral-900 rounded-2xl p-2"><img src="${c.img}" class="max-w-full max-h-full object-contain" crossorigin="anonymous"></div><div class="flex-grow"><h4 class="font-black italic uppercase text-[10px] mb-0.5">${c.name}</h4><p class="text-purple-500 font-black text-xs">${c.price * c.qty} AED</p></div><div class="flex items-center gap-3"><button onclick="changeQty(${c.id},-1)" class="w-8 h-8 bg-white/5 rounded-xl flex items-center justify-center"><i class="fas fa-minus text-[8px]"></i></button><span class="text-xs font-black w-4 text-center">${c.qty}</span><button onclick="changeQty(${c.id},1)" class="w-8 h-8 bg-white/5 rounded-xl flex items-center justify-center"><i class="fas fa-plus text-[8px]"></i></button></div></div>`;
                 }).join('');
             totalEl.innerText = `${total} AED`;
             countEl.innerText = count;
@@ -462,33 +423,28 @@
             const toast = document.getElementById('toast');
             toast.innerText = msg;
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2500);
+            setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
-        async function initApp() {
+        async function start() {
             await signInAnonymously(auth);
-            const isOrderView = await checkOrderId();
+            const showingReceipt = await checkReceipt();
             
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-            if (!isStandalone && !isOrderView) {
+            if (!isStandalone && !showingReceipt) {
                 document.getElementById('webapp-prompt').style.display = 'flex';
                 document.getElementById('main-content').style.display = 'none';
                 document.getElementById('loader').style.display = 'none';
                 return;
             }
 
-            const img = getDriveImg(LOGO_ID);
-            const appIcon = getDriveImg(WEBAPP_ICON_ID);
-            document.getElementById('nav-logo').src = img;
-            document.getElementById('load-logo').src = img;
-            document.getElementById('prompt-logo').src = appIcon; 
+            document.getElementById('nav-logo').src = getDriveImg(LOGO_ID);
+            document.getElementById('load-logo').src = getDriveImg(LOGO_ID);
+            document.getElementById('prompt-logo').src = getDriveImg(WEBAPP_ICON_ID); 
             renderGrid();
-            setTimeout(() => {
-                document.getElementById('loader').classList.add('fade-out');
-            }, 2000);
+            setTimeout(() => document.getElementById('loader').classList.add('fade-out'), 2500);
         }
-
-        initApp();
+        start();
     </script>
 </body>
 </html>
