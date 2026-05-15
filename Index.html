@@ -1,0 +1,421 @@
+python3 << 'PYEOF'
+with open('/mnt/user-data/outputs/index.html','r') as f:
+    c = f.read()
+
+# ═══════════════════════════════════════════
+# FIX 1: Card border — no visible border normally,
+# animated glowing purple line sweeping around when selected
+# ═══════════════════════════════════════════
+old_card_css = '''    .snack-card{cursor:pointer;transition:all .4s cubic-bezier(.175,.885,.32,1.275);}
+    .snack-card.selected{border-color:rgba(168,85,247,.5)!important;background:#0e0e0e;}
+    .snack-shadow{filter:drop-shadow(0 20px 40px rgba(168,85,247,.3));transition:transform .8s cubic-bezier(.22,1,.36,1);object-fit:contain;width:100%;height:100%;pointer-events:none;}
+    .boba-adjust{transform:scale(2.2) translate(10px,40px);}
+    .selected .boba-adjust{transform:scale(2.3) translate(10px,42px);}
+    .tiger-milk-pos{transform:scale(1.8) translate(65px,20px);}
+    .selected .tiger-milk-pos{transform:scale(1.9) translate(70px,20px);}
+    .image-container{height:480px;display:flex;align-items:center;justify-content:center;padding:1rem;position:relative;overflow:hidden;background:radial-gradient(circle at center,rgba(168,85,247,.05) 0%,transparent 70%);}'''
+
+new_card_css = '''    .snack-card{
+      cursor:pointer;
+      transition:all .4s cubic-bezier(.175,.885,.32,1.275);
+      border-color:transparent !important; /* no border by default */
+      position:relative;
+    }
+    /* Glowing sweep border — pseudo element that rotates around the card */
+    .snack-card::before{
+      content:"";
+      position:absolute;inset:-1px;
+      border-radius:inherit; /* matches rounded-3xl */
+      padding:1.5px;
+      background:conic-gradient(from var(--angle,0deg), transparent 0%, #a855f7 25%, #c084fc 50%, transparent 75%);
+      -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite:xor;
+      mask-composite:exclude;
+      opacity:0;
+      transition:opacity .3s ease;
+      pointer-events:none;
+      z-index:1;
+    }
+    .snack-card.selected::before{
+      opacity:1;
+      animation:borderSpin 1.8s linear infinite;
+    }
+    @property --angle{syntax:"<angle>";initial-value:0deg;inherits:false;}
+    @keyframes borderSpin{to{--angle:360deg;}}
+    .snack-card.selected{background:#0e0e0e;box-shadow:0 0 28px rgba(168,85,247,.18);}
+    .snack-shadow{filter:drop-shadow(0 20px 40px rgba(168,85,247,.3));transition:transform .8s cubic-bezier(.22,1,.36,1);object-fit:contain;width:100%;height:100%;pointer-events:none;}
+    /* All products scale up when selected — not just boba */
+    .snack-card.selected .snack-shadow{transform:scale(1.08) translateY(-8px);}
+    .boba-adjust{transform:scale(2.2) translate(10px,40px);}
+    .selected .boba-adjust{transform:scale(2.35) translate(10px,42px);}
+    .tiger-milk-pos{transform:scale(1.8) translate(65px,20px);}
+    .selected .tiger-milk-pos{transform:scale(1.95) translate(70px,20px);}
+    /* Snack products (non-boba) — scale from center */
+    .snack-card.selected .snack-shadow:not(.boba-adjust):not(.tiger-milk-pos){
+      transform:scale(1.12) translateY(-10px);
+      filter:drop-shadow(0 24px 48px rgba(168,85,247,.5));
+    }
+    .image-container{height:480px;display:flex;align-items:center;justify-content:center;padding:1rem;position:relative;overflow:hidden;background:radial-gradient(circle at center,rgba(168,85,247,.05) 0%,transparent 70%);}'''
+
+c = c.replace(old_card_css, new_card_css)
+
+# ═══════════════════════════════════════════
+# FIX 2: Firebase — add getBans/setBan/removeBan + saveUserInfo to FK_DB
+# ═══════════════════════════════════════════
+old_db_end = '''  async saveProducts(list){ await setDoc(doc(db,"config","products"),{list}); },
+};'''
+
+new_db_end = '''  async saveProducts(list){ await setDoc(doc(db,"config","products"),{list}); },
+
+  /* ── USER / BAN SYSTEM ── */
+  async saveUserInfo(hwid, info){
+    /* info = {name, grade, lastSeen} */
+    await setDoc(doc(db,"users",hwid), info, {merge:true});
+  },
+  async getAllUsers(){
+    try{
+      const snap = await getDocs(collection(db,"users"));
+      return snap.docs.map(d=>({hwid:d.id,...d.data()}));
+    }catch(e){ return []; }
+  },
+  async banUser(hwid, reason, durationHours){
+    const until = durationHours===0 ? 0 : Date.now() + durationHours*60*60*1000;
+    await setDoc(doc(db,"bans",hwid),{reason, until, bannedAt:Date.now()},{merge:true});
+  },
+  async unbanUser(hwid){ await deleteDoc(doc(db,"bans",hwid)); },
+  async checkBan(hwid){
+    try{
+      const snap = await getDoc(doc(db,"bans",hwid));
+      if(!snap.exists()) return null;
+      const ban = snap.data();
+      if(ban.until !== 0 && Date.now() > ban.until){
+        // Ban expired — auto remove
+        await deleteDoc(doc(db,"bans",hwid));
+        return null;
+      }
+      return ban;
+    }catch(e){ return null; }
+  },
+  async getAllBans(){
+    try{
+      const snap = await getDocs(collection(db,"bans"));
+      return snap.docs.map(d=>({hwid:d.id,...d.data()}));
+    }catch(e){ return []; }
+  },
+};'''
+
+c = c.replace(old_db_end, new_db_end)
+
+# ═══════════════════════════════════════════
+# FIX 3: Save user info + check ban on bootApp
+# ═══════════════════════════════════════════
+old_boot_products = '''    const remote=await window.FK_DB.getProducts();
+    if(remote&&remote.length>0) SNACKS=remote;
+  }catch(e){ console.warn("Settings load failed, using defaults",e); }
+
+  buildApp();
+  setupTapZone();'''
+
+new_boot_products = '''    const remote=await window.FK_DB.getProducts();
+    if(remote&&remote.length>0) SNACKS=remote;
+
+    /* Check if this device is banned */
+    const HWID = getOrCreateHWID();
+    const ban = await window.FK_DB.checkBan(HWID);
+    if(ban){
+      const until = ban.until===0?"Permanent":new Date(ban.until).toLocaleDateString("en-AE");
+      const loader=document.getElementById("loader");
+      if(loader) loader.style.display="none";
+      const app=document.getElementById("app");
+      if(app){ app.style.display="block"; }
+      app.innerHTML=`<div style="position:fixed;inset:0;background:#050505;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;">
+        <div style="width:64px;height:64px;border-radius:18px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
+          <i class="fas fa-ban" style="color:#ef4444;font-size:1.6rem;"></i>
+        </div>
+        <h2 style="font-family:'Archivo Black',sans-serif;font-size:22px;text-transform:uppercase;letter-spacing:-0.03em;margin-bottom:8px;">Access Restricted</h2>
+        <p style="font-size:13px;color:rgba(255,255,255,.4);line-height:1.7;max-width:280px;margin-bottom:12px;">${ban.reason||"You have been restricted from this app."}</p>
+        <p style="font-size:11px;color:rgba(239,68,68,.6);">Until: ${until}</p>
+      </div>`;
+      return;
+    }
+  }catch(e){ console.warn("Settings load failed, using defaults",e); }
+
+  buildApp();
+  setupTapZone();'''
+
+c = c.replace(old_boot_products, new_boot_products)
+
+# ═══════════════════════════════════════════
+# FIX 4: HWID helper + save user info on checkout
+# ═══════════════════════════════════════════
+old_hwid_save = '''  localStorage.setItem("fk_last_info",JSON.stringify({name,grade}));'''
+
+new_hwid_save = '''  localStorage.setItem("fk_last_info",JSON.stringify({name,grade}));
+  /* Save user info to Firebase for admin Users tab */
+  try{
+    const hwid=getOrCreateHWID();
+    if(window.FK_DB) window.FK_DB.saveUserInfo(hwid,{name,grade,lastSeen:Date.now()}).catch(()=>{});
+  }catch(e){}'''
+
+c = c.replace(old_hwid_save, new_hwid_save)
+
+# ═══════════════════════════════════════════
+# FIX 5: Add getOrCreateHWID helper + add Users tab to admin
+# ═══════════════════════════════════════════
+old_hwid_area = '''let tapCount=0, tapTimer=null;'''
+
+new_hwid_area = '''let tapCount=0, tapTimer=null;
+
+/* ── HWID (device fingerprint, persisted) ── */
+function getOrCreateHWID(){
+  let h=localStorage.getItem("fk_hwid");
+  if(!h){ h="hwid_"+Math.random().toString(36).substr(2,16)+"_"+Date.now().toString(36); localStorage.setItem("fk_hwid",h); }
+  return h;
+}'''
+
+c = c.replace(old_hwid_area, new_hwid_area)
+
+# ═══════════════════════════════════════════
+# FIX 6: Add Users tab button to admin panel HTML
+# ═══════════════════════════════════════════
+old_tabs = '''      <button onclick="admTab('settings')" style="flex-shrink:0;padding:12px 16px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;background:none;border:none;color:rgba(255,255,255,.3);border-bottom:2px solid transparent;cursor:pointer;font-family:Inter,sans-serif;" id="atb-settings">Settings</button>'''
+
+new_tabs = '''      <button onclick="admTab('settings')" style="flex-shrink:0;padding:12px 16px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;background:none;border:none;color:rgba(255,255,255,.3);border-bottom:2px solid transparent;cursor:pointer;font-family:Inter,sans-serif;" id="atb-settings">Settings</button>
+      <button onclick="admTab('users')" style="flex-shrink:0;padding:12px 16px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;background:none;border:none;color:rgba(255,255,255,.3);border-bottom:2px solid transparent;cursor:pointer;font-family:Inter,sans-serif;" id="atb-users">Users</button>'''
+
+c = c.replace(old_tabs, new_tabs)
+
+# ═══════════════════════════════════════════
+# FIX 7: Add users to admTab router
+# ═══════════════════════════════════════════
+old_tab_router = '''  if(name==="orders")   renderAdmOrders(c);
+  if(name==="products") renderAdmProducts(c);
+  if(name==="themes")   renderAdmThemes(c);
+  if(name==="settings") renderAdmSettings(c);'''
+
+new_tab_router = '''  if(name==="orders")   renderAdmOrders(c);
+  if(name==="products") renderAdmProducts(c);
+  if(name==="themes")   renderAdmThemes(c);
+  if(name==="settings") renderAdmSettings(c);
+  if(name==="users")    renderAdmUsers(c);'''
+
+c = c.replace(old_tab_router, new_tab_router)
+
+old_tab_names = '''  ["orders","products","themes","settings"].forEach(n=>{'''
+new_tab_names = '''  ["orders","products","themes","settings","users"].forEach(n=>{'''
+c = c.replace(old_tab_names, new_tab_names)
+
+# ═══════════════════════════════════════════
+# FIX 8: Add "Archive" button (hide from list, count in revenue) + Users tab render
+# Replace admDeleteOrder with admArchiveOrder
+# ═══════════════════════════════════════════
+old_delete_btn = '''          <button onclick="admDeleteOrder(\'${o.id}\')" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.18);border-radius:10px;padding:7px 10px;color:#f87171;font-size:11px;cursor:pointer;">🗑</button>'''
+
+new_delete_btn = '''          <button onclick="admArchiveOrder(\'${o.id}\')" title="Archive (remove from list, keep in revenue)" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.18);border-radius:10px;padding:7px 10px;color:#f87171;font-size:11px;cursor:pointer;">✓ Done</button>'''
+
+c = c.replace(old_delete_btn, new_delete_btn)
+
+# Add admArchiveOrder function replacing admDeleteOrder
+old_delete_fn = '''async function admDeleteOrder(id){
+  if(!confirm("Delete this order permanently?"))return;
+  await window.FK_DB.deleteOrder(id);
+  adminOrders=adminOrders.filter(x=>x.id!==id);
+  filterAdmOrders();showToast("Order deleted");
+}'''
+
+new_delete_fn = '''async function admArchiveOrder(id){
+  /* Mark as archived — removes from list but keeps in revenue count */
+  await window.FK_DB.updateOrderStatus(id,"archived");
+  adminOrders=adminOrders.filter(x=>x.id!==id);
+  filterAdmOrders();
+  /* Update stats */
+  document.getElementById("adm-content").querySelectorAll("[id^='adm-']");
+  renderAdmOrders(document.getElementById("adm-content"));
+  showToast("Order archived ✓");
+}
+async function admDeleteOrder(id){
+  if(!confirm("Permanently delete this order?"))return;
+  await window.FK_DB.deleteOrder(id);
+  adminOrders=adminOrders.filter(x=>x.id!==id);
+  filterAdmOrders();showToast("Order deleted");
+}'''
+
+c = c.replace(old_delete_fn, new_delete_fn)
+
+# Also filter out archived orders from the main list by default
+old_filter_list = '''  let list=adminOrders;
+  if(filter!=="all") list=list.filter(o=>o.status===filter);'''
+
+new_filter_list = '''  let list=adminOrders.filter(o=>o.status!=="archived"); /* hide archived by default */
+  if(filter==="archived") list=adminOrders.filter(o=>o.status==="archived");
+  else if(filter!=="all") list=list.filter(o=>o.status===filter);'''
+
+c = c.replace(old_filter_list, new_filter_list)
+
+# Update filter select to include archived option
+old_filter_sel = '''      <select id="adm-filter" onchange="filterAdmOrders()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 10px;color:white;font-size:12px;outline:none;">
+        <option value="all">All</option><option value="pending">Pending</option><option value="complete">Complete</option>
+      </select>'''
+
+new_filter_sel = '''      <select id="adm-filter" onchange="filterAdmOrders()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 10px;color:white;font-size:12px;outline:none;">
+        <option value="all">Active</option><option value="pending">Pending</option><option value="complete">Complete</option><option value="archived">Archived</option>
+      </select>'''
+
+c = c.replace(old_filter_sel, new_filter_sel)
+
+# Add archived to ORDER_STATUSES
+old_statuses = '''const ORDER_STATUSES = [
+  { key:"pending",            label:"Pending",               color:"#fbbf24", bg:"rgba(251,191,36,.1)",  border:"rgba(251,191,36,.25)" },
+  { key:"confirmed",          label:"Order Confirmed",        color:"#60a5fa", bg:"rgba(96,165,250,.1)",  border:"rgba(96,165,250,.25)" },
+  { key:"getting_product",    label:"Getting Product",        color:"#c084fc", bg:"rgba(192,132,252,.1)", border:"rgba(192,132,252,.25)" },
+  { key:"waiting_school_day", label:"Waiting for School Day", color:"#f97316", bg:"rgba(249,115,22,.1)",  border:"rgba(249,115,22,.25)" },
+  { key:"complete",           label:"Ready for Pickup ✓",     color:"#22c55e", bg:"rgba(34,197,94,.12)",  border:"rgba(34,197,94,.3)" },
+];'''
+
+new_statuses = '''const ORDER_STATUSES = [
+  { key:"pending",            label:"Pending",               color:"#fbbf24", bg:"rgba(251,191,36,.1)",  border:"rgba(251,191,36,.25)" },
+  { key:"confirmed",          label:"Order Confirmed",        color:"#60a5fa", bg:"rgba(96,165,250,.1)",  border:"rgba(96,165,250,.25)" },
+  { key:"getting_product",    label:"Getting Product",        color:"#c084fc", bg:"rgba(192,132,252,.1)", border:"rgba(192,132,252,.25)" },
+  { key:"waiting_school_day", label:"Waiting for School Day", color:"#f97316", bg:"rgba(249,115,22,.1)",  border:"rgba(249,115,22,.25)" },
+  { key:"complete",           label:"Ready for Pickup ✓",     color:"#22c55e", bg:"rgba(34,197,94,.12)",  border:"rgba(34,197,94,.3)" },
+  { key:"archived",           label:"Archived",               color:"rgba(255,255,255,.3)", bg:"rgba(255,255,255,.04)", border:"rgba(255,255,255,.1)" },
+];'''
+
+c = c.replace(old_statuses, new_statuses)
+
+# ═══════════════════════════════════════════
+# FIX 9: Add renderAdmUsers function before TOAST section
+# ═══════════════════════════════════════════
+old_toast_fn = '''/* ── TOAST ── */
+let _tt;
+function showToast(msg){'''
+
+new_toast_fn = '''/* ── USERS TAB ── */
+async function renderAdmUsers(c){
+  if(!c)return;
+  c.innerHTML=`<div style="text-align:center;padding:40px;"><i class="fas fa-spinner fa-spin" style="color:#a855f7;font-size:1.3rem;"></i></div>`;
+  try{
+    const [users, bans] = await Promise.all([
+      window.FK_DB.getAllUsers(),
+      window.FK_DB.getAllBans()
+    ]);
+    const banMap={};
+    bans.forEach(b=>{ banMap[b.hwid]=b; });
+
+    c.innerHTML=`<div style="padding:14px 16px;">
+      <p style="font-size:11px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;font-weight:900;margin-bottom:14px;">Users (${users.length})</p>
+      ${users.length===0?`<p style="text-align:center;color:rgba(255,255,255,.2);font-size:13px;padding:32px 0;">No users yet — they appear after someone places an order</p>`:
+        users.sort((a,b)=>(b.lastSeen||0)-(a.lastSeen||0)).map(u=>{
+          const ban=banMap[u.hwid];
+          const isBanned=!!ban;
+          const untilStr=ban?(ban.until===0?"Permanent":new Date(ban.until).toLocaleDateString("en-AE")):"";
+          const lastSeen=u.lastSeen?new Date(u.lastSeen).toLocaleDateString("en-AE",{day:"2-digit",month:"short"}):"—";
+          return `<div style="background:rgba(255,255,255,.03);border:1px solid ${isBanned?"rgba(239,68,68,.2)":"rgba(255,255,255,.07)"};border-radius:14px;padding:13px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+              <div>
+                <p style="font-weight:800;font-size:14px;">${u.name||"Unknown"}</p>
+                <p style="font-size:12px;color:rgba(168,85,247,.7);margin-top:2px;">🎓 ${u.grade||"—"}</p>
+                <p style="font-size:10px;color:rgba(255,255,255,.2);margin-top:2px;font-family:monospace;">ID: ${u.hwid?.substring(0,20)}...</p>
+              </div>
+              <div style="text-align:right;">
+                ${isBanned?`<span style="font-size:10px;font-weight:900;padding:2px 9px;border-radius:100px;background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25);">BANNED</span>`:""}
+                <p style="font-size:10px;color:rgba(255,255,255,.25);margin-top:4px;">Last: ${lastSeen}</p>
+              </div>
+            </div>
+            ${isBanned?`<p style="font-size:11px;color:rgba(239,68,68,.7);margin-bottom:8px;">Reason: ${ban.reason||"No reason"} · Until: ${untilStr}</p>`:""}
+            <div style="display:flex;gap:7px;flex-wrap:wrap;">
+              ${!isBanned
+                ?`<button onclick="openBanModal('${u.hwid}','${(u.name||"").replace(/'/g,"\\\\'")}','${(u.grade||"").replace(/'/g,"\\\\'")}' )" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:6px 12px;color:#f87171;font-size:11px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">🚫 Ban</button>`
+                :`<button onclick="admUnban('${u.hwid}')" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);border-radius:10px;padding:6px 12px;color:#22c55e;font-size:11px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">✓ Unban</button>`
+              }
+            </div>
+          </div>`;
+        }).join("")
+      }
+    </div>`;
+  }catch(e){
+    c.innerHTML=`<p style="text-align:center;color:rgba(255,255,255,.25);padding:40px;">Failed to load users</p>`;
+  }
+}
+
+function openBanModal(hwid, name, grade){
+  let m=document.getElementById("ban-modal");
+  if(!m){m=document.createElement("div");m.id="ban-modal";document.body.appendChild(m);}
+  m.style.cssText="position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);";
+  m.innerHTML=`<div style="width:100%;background:#0d0d16;border-top:1px solid rgba(239,68,68,.2);border-radius:24px 24px 0 0;padding:24px;padding-bottom:calc(24px + var(--safe-bottom));">
+    <div style="width:40px;height:4px;background:rgba(255,255,255,.1);border-radius:4px;margin:0 auto 18px;"></div>
+    <h3 style="font-family:'Archivo Black',sans-serif;font-size:18px;text-transform:uppercase;margin-bottom:4px;">Ban User</h3>
+    <p style="font-size:13px;color:rgba(255,255,255,.4);margin-bottom:16px;">${name} · ${grade}</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <label style="font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;font-weight:900;display:block;margin-bottom:6px;">Reason</label>
+        <input id="ban-reason" type="text" placeholder="e.g. Spam, misconduct..." style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:white;font-size:13px;outline:none;box-sizing:border-box;font-family:Inter,sans-serif;">
+      </div>
+      <div>
+        <label style="font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.08em;font-weight:900;display:block;margin-bottom:6px;">Duration</label>
+        <select id="ban-duration" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:white;font-size:13px;outline:none;font-family:Inter,sans-serif;">
+          <option value="1">1 Hour</option>
+          <option value="24">1 Day</option>
+          <option value="168">1 Week</option>
+          <option value="720">1 Month</option>
+          <option value="0">Permanent</option>
+        </select>
+      </div>
+    </div>
+    <button onclick="admBan('${hwid}')" style="width:100%;margin-top:16px;padding:14px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:white;border:none;border-radius:12px;font-weight:900;font-size:14px;text-transform:uppercase;cursor:pointer;font-family:Inter,sans-serif;">🚫 Confirm Ban</button>
+    <button onclick="document.getElementById('ban-modal').style.display='none'" style="width:100%;margin-top:8px;padding:12px;background:none;border:none;color:rgba(255,255,255,.3);font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">Cancel</button>
+  </div>`;
+}
+async function admBan(hwid){
+  const reason=document.getElementById("ban-reason")?.value.trim()||"No reason given";
+  const duration=parseInt(document.getElementById("ban-duration")?.value||"24");
+  await window.FK_DB.banUser(hwid,reason,duration);
+  document.getElementById("ban-modal").style.display="none";
+  showToast("User banned");
+  renderAdmUsers(document.getElementById("adm-content"));
+}
+async function admUnban(hwid){
+  await window.FK_DB.unbanUser(hwid);
+  showToast("User unbanned");
+  renderAdmUsers(document.getElementById("adm-content"));
+}
+
+/* ── TOAST ── */
+let _tt;
+function showToast(msg){'''
+
+c = c.replace(old_toast_fn, new_toast_fn)
+
+# ═══════════════════════════════════════════
+# FIX 10: Receipt live status — fix the receipt.html separately
+# ═══════════════════════════════════════════
+
+with open('/mnt/user-data/outputs/index.html','w') as f:
+    f.write(c)
+
+checks=[
+    ("Animated border sweep","borderSpin"),
+    ("No default border","border-color:transparent"),
+    ("Snack scale on select","snack-shadow:not(.boba-adjust)"),
+    ("HWID helper","getOrCreateHWID"),
+    ("Ban check on boot","checkBan"),
+    ("Ban screen","Access Restricted"),
+    ("Save user info","saveUserInfo"),
+    ("getAllUsers","getAllUsers"),
+    ("banUser","banUser"),
+    ("unbanUser","unbanUser"),
+    ("Users tab button","atb-users"),
+    ("renderAdmUsers","renderAdmUsers"),
+    ("Ban modal","openBanModal"),
+    ("Archive order","admArchiveOrder"),
+    ("Archived filter","archived"),
+    ("ORDER_STATUSES archived","archived"),
+    ("Firebase intact","fares-f0707"),
+]
+ok=True
+for name,check in checks:
+    found=check in c
+    print(f"  {'✓' if found else '✗ MISSING'} {name}")
+    if not found: ok=False
+print(f"\n  {len(c):,} chars | {'ALL OK' if ok else 'ISSUES'}")
+PYEOF
